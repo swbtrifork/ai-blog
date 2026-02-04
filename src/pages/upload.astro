@@ -1,0 +1,353 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const permalink = new URL("upload", Astro.site).href;
+---
+
+<BaseLayout
+  title="Upload Video"
+  description="Upload videos to Azure Storage"
+  permalink={permalink}
+  current="upload"
+>
+  <article class="upload-page">
+    <h1>Upload Video to Azure Storage</h1>
+
+    <div class="upload-container">
+      <form id="uploadForm" class="upload-form">
+        <div class="form-group">
+          <label for="videoFile" class="file-label">
+            <span class="file-label-text">Choose Video File</span>
+            <input
+              type="file"
+              id="videoFile"
+              name="video"
+              accept="video/mp4,video/webm,video/ogg,video/quicktime"
+              required
+            />
+          </label>
+          <p class="help-text">
+            Supported formats: MP4, WebM, OGG, MOV (Max 500MB)
+          </p>
+        </div>
+
+        <div id="fileInfo" class="file-info hidden"></div>
+
+        <div class="progress-container hidden" id="progressContainer">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <p class="progress-text" id="progressText">0%</p>
+        </div>
+
+        <button type="submit" class="upload-button" id="uploadButton">
+          Upload Video
+        </button>
+      </form>
+
+      <div id="result" class="result hidden"></div>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .upload-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    color: var(--color-text);
+  }
+
+  .upload-container {
+    background: var(--color-card-background, #f9f9f9);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .upload-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .file-label {
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .file-label-text {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: var(--color-primary, #4a5568);
+    color: white;
+    border-radius: 6px;
+    transition: background 0.2s;
+    font-weight: 500;
+  }
+
+  .file-label:hover .file-label-text {
+    background: var(--color-primary-dark, #2d3748);
+  }
+
+  .file-label input[type="file"] {
+    position: absolute;
+    left: -9999px;
+    opacity: 0;
+  }
+
+  .help-text {
+    font-size: 0.875rem;
+    color: var(--color-text-muted, #666);
+    margin: 0;
+  }
+
+  .file-info {
+    padding: 1rem;
+    background: #e6f7ff;
+    border: 1px solid #91d5ff;
+    border-radius: 6px;
+    font-size: 0.875rem;
+  }
+
+  .progress-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 24px;
+    background: #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #8bc34a);
+    transition: width 0.3s ease;
+    width: 0%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  .progress-text {
+    text-align: center;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .upload-button {
+    padding: 1rem 2rem;
+    background: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .upload-button:hover:not(:disabled) {
+    background: #45a049;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  }
+
+  .upload-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+
+  .result {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+  }
+
+  .result.success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+  }
+
+  .result.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+  }
+
+  .result h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+  }
+
+  .result p {
+    margin: 0.5rem 0;
+  }
+
+  .result a {
+    color: #0066cc;
+    word-break: break-all;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 2rem;
+    }
+
+    .upload-container {
+      padding: 1.5rem;
+    }
+  }
+</style>
+
+<script>
+  const form = document.getElementById("uploadForm") as HTMLFormElement;
+  const fileInput = document.getElementById("videoFile") as HTMLInputElement;
+  const fileInfo = document.getElementById("fileInfo") as HTMLDivElement;
+  const progressContainer = document.getElementById(
+    "progressContainer",
+  ) as HTMLDivElement;
+  const progressFill = document.getElementById(
+    "progressFill",
+  ) as HTMLDivElement;
+  const progressText = document.getElementById(
+    "progressText",
+  ) as HTMLParagraphElement;
+  const uploadButton = document.getElementById(
+    "uploadButton",
+  ) as HTMLButtonElement;
+  const resultDiv = document.getElementById("result") as HTMLDivElement;
+
+  // Show file info when file is selected
+  fileInput.addEventListener("change", (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      fileInfo.innerHTML = `
+        <strong>Selected file:</strong><br/>
+        Name: ${file.name}<br/>
+        Size: ${sizeMB} MB<br/>
+        Type: ${file.type}
+      `;
+      fileInfo.classList.remove("hidden");
+      resultDiv.classList.add("hidden");
+    }
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const file = fileInput.files?.[0];
+    if (!file) {
+      showResult("error", "Please select a video file");
+      return;
+    }
+
+    // Disable button and show progress
+    uploadButton.disabled = true;
+    uploadButton.textContent = "Uploading...";
+    progressContainer.classList.remove("hidden");
+    resultDiv.classList.add("hidden");
+
+    // Simulate progress (since we can't track actual upload progress easily)
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+      if (progress < 90) {
+        progress += Math.random() * 10;
+        updateProgress(Math.min(progress, 90));
+      }
+    }, 300);
+
+    try {
+      const formData = new FormData();
+      formData.append("video", file);
+
+      const response = await fetch("/api/upload-video", {
+        method: "POST",
+        body: formData,
+      });
+
+      clearInterval(progressInterval);
+      updateProgress(100);
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        showResult(
+          "success",
+          `
+          <h3>✓ Upload Successful!</h3>
+          <p><strong>File:</strong> ${data.blobName}</p>
+          <p><strong>Size:</strong> ${(data.size / (1024 * 1024)).toFixed(2)} MB</p>
+          <p><strong>URL:</strong><br/><a href="${data.url}" target="_blank">${data.url}</a></p>
+        `,
+        );
+        form.reset();
+        fileInfo.classList.add("hidden");
+      } else {
+        showResult(
+          "error",
+          `
+          <h3>✗ Upload Failed</h3>
+          <p>${data.error || "Unknown error occurred"}</p>
+          ${data.details ? `<p><small>${data.details}</small></p>` : ""}
+        `,
+        );
+      }
+    } catch (error) {
+      clearInterval(progressInterval);
+      showResult(
+        "error",
+        `
+        <h3>✗ Upload Failed</h3>
+        <p>Network error: ${error instanceof Error ? error.message : "Unknown error"}</p>
+      `,
+      );
+    } finally {
+      uploadButton.disabled = false;
+      uploadButton.textContent = "Upload Video";
+      setTimeout(() => {
+        progressContainer.classList.add("hidden");
+        progressFill.style.width = "0%";
+      }, 2000);
+    }
+  });
+
+  function updateProgress(percent: number) {
+    const rounded = Math.round(percent);
+    progressFill.style.width = `${rounded}%`;
+    progressText.textContent = `${rounded}%`;
+  }
+
+  function showResult(type: "success" | "error", message: string) {
+    resultDiv.className = `result ${type}`;
+    resultDiv.innerHTML = message;
+    resultDiv.classList.remove("hidden");
+  }
+</script>
