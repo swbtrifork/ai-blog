@@ -1,8 +1,9 @@
 ---
-import { getCollection, render } from 'astro:content'
-import readingTime from 'reading-time'
+import { getCollection, render } from 'astro:content';
+import readingTime from 'reading-time';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Bio from '../../components/Bio.astro';
+
+export const prerender = true;
 
 export async function getStaticPaths() {
 	const posts = await getCollection('posts')
@@ -29,8 +30,6 @@ const { Content } = await render(post)
     <article class="content">
       <Content />
     </article>
-    <hr />
-    <Bio />
   </div>
 </BaseLayout>
 
@@ -52,6 +51,6 @@ const { Content } = await render(post)
 
   header hr {
     min-width: 100px;
-    width: 30%;
+    width: 40%;
   }
 </style>

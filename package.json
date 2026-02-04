@@ -9,7 +9,7 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/mdx": "^4.2.0",
+    "@astrojs/mdx": "^4.3.13",
     "@astrojs/node": "^9.5.2",
     "@astrojs/svelte": "^7.2.5",
     "@azure/identity": "^4.13.0",
